@@ -61,6 +61,15 @@ func (m *Message) Reply(client *whatsmeow.Client, text string) (whatsmeow.SendRe
 	})
 }
 
+func (m *Message) ReplyCustom(client *whatsmeow.Client, text string, custom *waE2E.ContextInfo) (whatsmeow.SendResponse, error) {
+	return client.SendMessage(m.ctx, m.Info.Chat, &waE2E.Message{
+		ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+			Text:        &text,
+			ContextInfo: custom,
+		},
+	})
+}
+
 func (m *Message) Edit(client *whatsmeow.Client, text string) (whatsmeow.SendResponse, error) {
 	return client.SendMessage(m.ctx, m.Info.Chat, client.BuildEdit(m.Info.Chat, m.Info.ID, &waE2E.Message{
 		Conversation: &text,

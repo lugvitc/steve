@@ -31,21 +31,21 @@ func initLanguagesString() {
 }
 
 func languagesC(client *whatsmeow.Client, ctx *context.Context) error {
-	_, _ = ctx.Message.Edit(client, availableLangs)
+	_, _ = reply(client, ctx.Message, availableLangs)
 	return ext.EndGroups
 }
 
 func eval(client *whatsmeow.Client, ctx *context.Context) error {
 	args := ctx.Message.ArgsN(3)
 	if len(args) < 3 {
-		_, _ = ctx.Message.Edit(client, "Invalid amount of arguments.\nExpected: ```.eval <language> <code>```")
+		_, _ = reply(client, ctx.Message, "Invalid amount of arguments.\nExpected: ```.eval <language> <code>```")
 		return ext.EndGroups
 	}
 	lang := args[1]
 	text := args[2]
 
 	if text == "" {
-		_, _ = ctx.Message.Edit(client, "You need to provide me some code to eval.")
+		_, _ = reply(client, ctx.Message, "You need to provide me some code to eval.")
 		return ext.EndGroups
 	}
 
@@ -55,7 +55,7 @@ func eval(client *whatsmeow.Client, ctx *context.Context) error {
 		},
 	)
 	if err != nil {
-		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to eval: %s", err.Error()))
+		_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to eval: %s", err.Error()))
 		return ext.EndGroups
 	}
 
@@ -65,9 +65,9 @@ func eval(client *whatsmeow.Client, ctx *context.Context) error {
 		out = "No Output"
 	}
 
-	reply := fmt.Sprintf("*Language*: ```%s```\n\n*Input*: ```%s```\n\n*Output*: ```%s```", lang, text, output.GetOutput())
+	replyText := fmt.Sprintf("*Language*: ```%s```\n\n*Input*: ```%s```\n\n*Output*: ```%s```", lang, text, output.GetOutput())
 
-	_, err = ctx.Message.Edit(client, reply)
+	_, err = reply(client, ctx.Message, replyText)
 	if err != nil {
 		log.Println("failed to send message:", err.Error())
 	}
