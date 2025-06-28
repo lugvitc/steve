@@ -27,7 +27,7 @@ func info(client *whatsmeow.Client, ctx *context.Context) error {
 	text += fmt.Sprintf("\n*Owner*: %s", info.OwnerJID.User)
 	text += fmt.Sprintf("\n*Topic*: ```%s```", info.Topic)
 	text += fmt.Sprintf("\n*ID*: ```%s```", jid.String())
-	_, _ = ctx.Message.Edit(client, text)
+	_, _ = reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 
@@ -38,7 +38,7 @@ func linkinfo(client *whatsmeow.Client, ctx *context.Context) error {
 	}
 	info, err := client.GetGroupInfoFromLink(args[1])
 	if err != nil {
-		_, _ = ctx.Message.Edit(client, err.Error())
+		_, _ = reply(client, ctx.Message, err.Error())
 		return ext.EndGroups
 	}
 	if info.Topic == "" {
@@ -49,7 +49,7 @@ func linkinfo(client *whatsmeow.Client, ctx *context.Context) error {
 	text += fmt.Sprintf("\n*Owner*: %s", info.OwnerJID.User)
 	text += fmt.Sprintf("\n*Topic*: ```%s```", info.Topic)
 	text += fmt.Sprintf("\n*ID*: ```%s```", info.JID.String())
-	_, _ = ctx.Message.Edit(client, text)
+	_, _ = reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 

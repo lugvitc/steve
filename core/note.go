@@ -36,7 +36,7 @@ func addNote(client *whatsmeow.Client, ctx *context.Context) error {
 		value = strings.Join(args[2:], " ")
 	}
 	go sql.AddNote(strings.ToLower(key), value)
-	_, _ = ctx.Message.Edit(client, fmt.Sprintf("Added Note ```%s```.", key))
+	_, _ = reply(client, ctx.Message, fmt.Sprintf("Added Note ```%s```.", key))
 	return ext.EndGroups
 }
 
@@ -47,9 +47,9 @@ func deleteNote(client *whatsmeow.Client, ctx *context.Context) error {
 	}
 	key := args[1]
 	if sql.DeleteNote(strings.ToLower(key)) {
-		_, _ = ctx.Message.Edit(client, fmt.Sprintf("Successfully delete note '```%s```'.", key))
+		_, _ = reply(client, ctx.Message, fmt.Sprintf("Successfully delete note '```%s```'.", key))
 	} else {
-		_, _ = ctx.Message.Edit(client, "Failed to delete that note!")
+		_, _ = reply(client, ctx.Message, "Failed to delete that note!")
 	}
 	return ext.EndGroups
 }
@@ -64,7 +64,7 @@ func getNote(client *whatsmeow.Client, ctx *context.Context) error {
 	if value == "" {
 		value = "```Note not found```"
 	}
-	_, _ = ctx.Message.Edit(client, value)
+	_, _ = reply(client, ctx.Message, value)
 	return ext.EndGroups
 }
 
@@ -82,7 +82,7 @@ func getNoteHash(client *whatsmeow.Client, ctx *context.Context) error {
 	if value == "" {
 		return nil
 	}
-	_, _ = ctx.Message.Edit(client, value)
+	_, _ = reply(client, ctx.Message, value)
 	return nil
 }
 
@@ -94,7 +94,7 @@ func listNotes(client *whatsmeow.Client, ctx *context.Context) error {
 	if text == "*List of notes*:" {
 		text = "No notes are present."
 	}
-	_, _ = ctx.Message.Edit(client, text)
+	_, _ = reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 
@@ -112,17 +112,17 @@ func (*Module) LoadNote(dispatcher *ext.Dispatcher) {
 		).AddDescription("Clear a note."),
 	)
 	dispatcher.AddHandler(
-		handlers.NewCommand("get", authorizedOnly(getNote), ppLogger.Create("get-cmd").
+		handlers.NewCommand("get", getNote, ppLogger.Create("get-cmd").
 			ChangeLevel(waLogger.LevelInfo),
 		).AddDescription("Get a note from key."),
 	)
 	dispatcher.AddHandler(
-		handlers.NewCommand("notes", authorizedOnly(listNotes), ppLogger.Create("notes").
+		handlers.NewCommand("notes", listNotes, ppLogger.Create("notes").
 			ChangeLevel(waLogger.LevelInfo),
 		).AddDescription("Display keys of all saved notes."),
 	)
 	dispatcher.AddHandlerToGroup(
-		handlers.NewMessage(authorizedOnlyMessages(getNoteHash), ppLogger.Create("get-hash").
+		handlers.NewMessage(getNoteHash, ppLogger.Create("get-hash").
 			ChangeLevel(waLogger.LevelInfo),
 		).AddDescription("Get a note using #key format."),
 		1,

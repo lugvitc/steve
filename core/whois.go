@@ -21,7 +21,7 @@ func whois(client *whatsmeow.Client, ctx *context.Context) error {
 			jid, err = types.ParseJID(*msg.Message.ExtendedTextMessage.ContextInfo.Participant)
 			if err != nil {
 				fmt.Println(err.Error())
-				_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
+				_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to get user: %s", err.Error()))
 				return ext.EndGroups
 			}
 		} else {
@@ -29,7 +29,7 @@ func whois(client *whatsmeow.Client, ctx *context.Context) error {
 		}
 		users, err := client.GetUserInfo([]types.JID{jid})
 		if err != nil {
-			_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
+			_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to get user: %s", err.Error()))
 			return ext.EndGroups
 		}
 		text := fmt.Sprintf(`*User Info*
@@ -48,7 +48,7 @@ func whois(client *whatsmeow.Client, ctx *context.Context) error {
 			}
 			return "```false```"
 		}())
-		_, _ = ctx.Message.Edit(client, text)
+		_, _ = reply(client, ctx.Message, text)
 		return ext.EndGroups
 	}
 	if ctx.Message.Message.Info.IsGroup {
@@ -57,7 +57,7 @@ func whois(client *whatsmeow.Client, ctx *context.Context) error {
 	jid := ctx.Message.Info.Chat
 	users, err := client.GetUserInfo([]types.JID{jid})
 	if err != nil {
-		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
+		_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to get user: %s", err.Error()))
 		return ext.EndGroups
 	}
 	text := fmt.Sprintf(`*User Info*
@@ -76,7 +76,7 @@ func whois(client *whatsmeow.Client, ctx *context.Context) error {
 		}
 		return "```false```"
 	}())
-	_, _ = ctx.Message.Edit(client, text)
+	_, _ = reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 
@@ -89,7 +89,7 @@ func devices(client *whatsmeow.Client, ctx *context.Context) error {
 			jid, err = types.ParseJID(*msg.Message.ExtendedTextMessage.ContextInfo.Participant)
 			if err != nil {
 				fmt.Println(err.Error())
-				_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
+				_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to get user: %s", err.Error()))
 				return ext.EndGroups
 			}
 		} else {
@@ -97,7 +97,7 @@ func devices(client *whatsmeow.Client, ctx *context.Context) error {
 		}
 		devices, err := client.GetUserDevices([]types.JID{jid})
 		if err != nil {
-			_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
+			_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to get user: %s", err.Error()))
 			return ext.EndGroups
 		}
 		text := "*Devices*:"
@@ -105,7 +105,7 @@ func devices(client *whatsmeow.Client, ctx *context.Context) error {
 			text += fmt.Sprintf("\n- %s", device.String())
 		}
 		text += fmt.Sprintf("\n\nTotal signed in devices: %d", len(devices))
-		_, _ = ctx.Message.Edit(client, text)
+		_, _ = reply(client, ctx.Message, text)
 		return ext.EndGroups
 	}
 	if ctx.Message.Message.Info.IsGroup {
@@ -114,7 +114,7 @@ func devices(client *whatsmeow.Client, ctx *context.Context) error {
 	jid := ctx.Message.Info.Chat
 	devices, err := client.GetUserDevices([]types.JID{jid})
 	if err != nil {
-		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
+		_, _ = reply(client, ctx.Message, fmt.Sprintf("failed to get user: %s", err.Error()))
 		return ext.EndGroups
 	}
 	text := "*Devices*:"
@@ -122,7 +122,7 @@ func devices(client *whatsmeow.Client, ctx *context.Context) error {
 		text += fmt.Sprintf("\n- %s", device.String())
 	}
 	text += fmt.Sprintf("\n\nTotal signed in devices: %d", len(devices))
-	_, _ = ctx.Message.Edit(client, text)
+	_, _ = reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 

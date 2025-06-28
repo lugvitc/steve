@@ -18,6 +18,13 @@ import (
 	"go.mau.fi/whatsmeow"
 )
 
+func reply(client *whatsmeow.Client, msg *context.Message, text string) (whatsmeow.SendResponse, error) {
+	if msg.Info.IsFromMe {
+		return msg.Edit(client, text)
+	}
+	return msg.Reply(client, text)
+}
+
 var EndGroups = errors.New("group iteration ended")
 var ContinueGroups error = nil
 
@@ -78,8 +85,7 @@ func (d *Dispatcher) runHelper() {
 		if len(args) > 1 {
 			hstr := d.help.GetOne(args[1])
 			if hstr != "" {
-				ctx.Message.Edit(
-					client,
+				reply(client, ctx.Message,
 					fmt.Sprintf(
 						"*%s*\n\n%s", cases.Title(language.English).String(args[1]),
 						hstr,
@@ -87,7 +93,7 @@ func (d *Dispatcher) runHelper() {
 				return EndGroups
 			}
 		}
-		ctx.Message.Edit(client, "*Help Menu*\n"+d.help.Get())
+		reply(client, ctx.Message, "*Help Menu*\n"+d.help.Get())
 		return EndGroups
 	}
 

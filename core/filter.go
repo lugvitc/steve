@@ -43,7 +43,7 @@ func addFilter(dispatcher *ext.Dispatcher, dispatcherGroup int) func(
 			sql.AddFilter(strings.ToLower(key), value)
 			initFilter(ctx.Logger, &sql.Filter{Name: key, Value: value}, dispatcher, dispatcherGroup)
 		}()
-		_, _ = ctx.Message.Edit(client, fmt.Sprintf("Added Filter ```%s```.", key))
+		_, _ = reply(client, ctx.Message, fmt.Sprintf("Added Filter ```%s```.", key))
 		return ext.EndGroups
 	}
 }
@@ -55,9 +55,9 @@ func removeFilter(client *whatsmeow.Client, ctx *context.Context) error {
 	}
 	key := args[1]
 	if sql.DeleteFilter(strings.ToLower(key)) {
-		_, _ = ctx.Message.Edit(client, fmt.Sprintf("Successfully delete filter '```%s```'.", key))
+		_, _ = reply(client, ctx.Message, fmt.Sprintf("Successfully delete filter '```%s```'.", key))
 	} else {
-		_, _ = ctx.Message.Edit(client, "Failed to delete that filter!")
+		_, _ = reply(client, ctx.Message, "Failed to delete that filter!")
 	}
 	return ext.EndGroups
 }
@@ -103,7 +103,7 @@ func listFilters(client *whatsmeow.Client, ctx *context.Context) error {
 	if text == "*List of filters*:" {
 		text = "No filters are present."
 	}
-	_, _ = ctx.Message.Edit(client, text)
+	_, _ = reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 
@@ -126,7 +126,7 @@ func allowFilter(client *whatsmeow.Client, ctx *context.Context) error {
 		}
 	}
 	sql.ShouldAllowFilters(chatId, allowFilters)
-	ctx.Message.Edit(client, text)
+	reply(client, ctx.Message, text)
 	return ext.EndGroups
 }
 
