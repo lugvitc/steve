@@ -1,6 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: /app/ubot
+    image: steve
+    command: ["/app/ubot"]
+    volumes:
+      - ./data:/data
