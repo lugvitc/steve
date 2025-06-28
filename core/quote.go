@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	darkBgColor     = color.RGBA{R: 11, G: 20, B: 26, A: 255}    // #0B141A
-	darkBubbleColor = color.RGBA{R: 32, G: 44, B: 51, A: 255}    // #202C33
+	darkBgColor     = color.RGBA{R: 11, G: 20, B: 26, A: 255}   // #0B141A
+	darkBubbleColor = color.RGBA{R: 32, G: 44, B: 51, A: 255}   // #202C33
 	darkNameColor   = color.RGBA{R: 83, G: 189, B: 235, A: 255}  // #53BDEB
 	darkTextColor   = color.RGBA{R: 233, G: 237, B: 239, A: 255} // #E9EDEF
 	darkTimeColor   = color.RGBA{R: 134, G: 150, B: 160, A: 255} // #8696A0
@@ -45,8 +45,8 @@ func (*Module) LoadQuote(dispatcher *ext.Dispatcher) {
 func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	msg := ctx.Message.Message
 	if msg.GetExtendedTextMessage() == nil || msg.ExtendedTextMessage.GetContextInfo() == nil || msg.ExtendedTextMessage.ContextInfo.QuotedMessage == nil {
-		_, _ = reply(client, ctx.Message, "Please reply to a message to quote it.")
-		return ext.EndGroups
+		_, err := reply(client, ctx.Message, "Please reply to a message to quote it.")
+		return err
 	}
 
 	contextInfo := msg.ExtendedTextMessage.ContextInfo
@@ -61,8 +61,8 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	}
 
 	if msgText == "" {
-		_, _ = reply(client, ctx.Message, "Cannot quote an empty message or non-text content.")
-		return ext.EndGroups
+		_, err := reply(client, ctx.Message, "Cannot quote an empty message or non-text content.")
+		return err
 	}
 
 	senderJID, err := types.ParseJID(contextInfo.GetParticipant())
@@ -84,6 +84,7 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 
 	pfpImage, err := getProfilePicture(client, senderJID)
 	if err != nil {
+		// Don't return an error, just use the default PFP
 		pfpImage = createDefaultPFP()
 	}
 
@@ -92,15 +93,15 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	imageData, err := createQuoteImage(pfpImage, senderName, msgText, msgTimestamp)
 	if err != nil {
 		log.Printf("Failed to create quote image: %v", err)
-		_, _ = reply(client, ctx.Message, "Sorry, something went wrong while creating the quote.")
-		return ext.EndGroups
+		_, err := reply(client, ctx.Message, "Sorry, something went wrong while creating the quote.")
+		return err
 	}
 
 	uploaded, err := client.Upload(context.Background(), imageData, whatsmeow.MediaImage)
 	if err != nil {
 		log.Printf("Failed to upload sticker: %v", err)
-		_, _ = reply(client, ctx.Message, "Failed to upload the sticker.")
-		return ext.EndGroups
+		_, err := reply(client, ctx.Message, "Failed to upload the sticker.")
+		return err
 	}
 
 	stickerMsg := &waProto.Message{
@@ -115,13 +116,15 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 		},
 	}
 
+	// This final send is for the sticker itself, not a simple text reply, so it remains unchanged.
 	_, err = client.SendMessage(ctx.Message.Info.Chat, stickerMsg)
 	if err != nil {
 		log.Printf("Failed to send sticker: %v", err)
 	}
 
-	return ext.EndGroups
+	return nil // Success
 }
+
 
 func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) ([]byte, error) {
 	const (
@@ -133,15 +136,18 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 		bubbleRadius   = 12.0
 	)
 
-	if err := gg.LoadFontFace("assets/Roboto-Bold.ttf", 20); err != nil {
-		return nil, fmt.Errorf("could not load bold font: %w. Make sure 'assets/Roboto-Bold.ttf' exists", err)
+	// To prevent a panic on systems where fonts are not found, we check the error
+	// and return a more user-friendly error message.
+	if err := gg.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20); err != nil {
+		return nil, fmt.Errorf("could not load bold font. Make sure a valid font file exists")
 	}
-	if err := gg.LoadFontFace("assets/Roboto-Regular.ttf", 22); err != nil {
-		return nil, fmt.Errorf("could not load regular font: %w. Make sure 'assets/Roboto-Regular.ttf' exists", err)
+	if err := gg.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22); err != nil {
+		return nil, fmt.Errorf("could not load regular font. Make sure a valid font file exists")
 	}
 
 	tempDC := gg.NewContext(0, 0)
-	regularFont, err := gg.ParseFontFace("assets/Roboto-Regular.ttf", 22)
+	// Using a specific font name to avoid ambiguity if multiple are loaded.
+	regularFont, err := gg.ParseFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +156,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	lineSpacing := 1.4
 	wrappedLines := tempDC.WordWrap(text, maxWidth-(padding*2))
 
-	boldFont, err := gg.ParseFontFace("assets/Roboto-Bold.ttf", 20)
+	boldFont, err := gg.ParseFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
 	if err != nil {
 		return nil, err
 	}
@@ -225,6 +231,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 
 	return buf.Bytes(), nil
 }
+
 
 func getProfilePicture(client *whatsmeow.Client, jid types.JID) (image.Image, error) {
 	pfpInfo, err := client.GetProfilePictureInfo(jid, &whatsmeow.GetProfilePictureParams{Preview: true})
