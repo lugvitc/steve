@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/lugvitc/steve/config"
 	"github.com/lugvitc/steve/core"
 	"github.com/lugvitc/steve/core/sql"
 	"github.com/lugvitc/steve/ext"
@@ -21,6 +22,10 @@ import (
 )
 
 func main() {
+	err := config.LoadConfig()
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
+	}
 	dbLog := waLog.Stdout("Database", "INFO", true)
 	ctx := context.Background()
 	// Make sure you add appropriate DB connector imports, e.g. github.com/mattn/go-sqlite3 for SQLite

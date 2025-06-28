@@ -10,7 +10,7 @@ import (
 )
 
 func ping(client *whatsmeow.Client, ctx *context.Context) error {
-	_, _ = ctx.Message.Edit(client, "Pong!")
+	_, _ = reply(client, ctx.Message, "Pong!")
 	return ext.EndGroups
 }
 
