@@ -1,22 +1,19 @@
 package core
 
 import (
-	"bytes"
 	"encoding/ascii85"
 	"encoding/base64"
 	"strings"
 
+	"github.com/lugvitc/steve/ext"
 	"github.com/lugvitc/steve/ext/context"
+	"github.com/lugvitc/steve/ext/handlers"
+	waLogger "github.com/lugvitc/steve/logger"
+
+	"go.mau.fi/whatsmeow"
 )
 
-func init() {
-	NewCommand("b64", b64Encode).SetDescription("Encode text to Base64")
-	NewCommand("b64d", b64Decode).SetDescription("Decode Base64 text")
-	NewCommand("b85", b85Encode).SetDescription("Encode text to Base85")
-	NewCommand("b85d", b85Decode).SetDescription("Decode Base85 text")
-}
-
-func b64Encode(ctx *context.Context) error {
+func b64Encode(_ *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
 		return ctx.Reply("Usage: .b64 <text>")
@@ -25,7 +22,7 @@ func b64Encode(ctx *context.Context) error {
 	return ctx.Reply("🔒 Base64:\n" + encoded)
 }
 
-func b64Decode(ctx *context.Context) error {
+func b64Decode(_ *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
 		return ctx.Reply("Usage: .b64d <base64>")
@@ -37,7 +34,7 @@ func b64Decode(ctx *context.Context) error {
 	return ctx.Reply("🔓 Decoded:\n" + string(decoded))
 }
 
-func b85Encode(ctx *context.Context) error {
+func b85Encode(_ *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
 		return ctx.Reply("Usage: .b85 <text>")
@@ -47,7 +44,7 @@ func b85Encode(ctx *context.Context) error {
 	return ctx.Reply("🔒 Base85:\n" + string(buf[:n]))
 }
 
-func b85Decode(ctx *context.Context) error {
+func b85Decode(_ *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
 		return ctx.Reply("Usage: .b85d <base85>")
@@ -58,4 +55,26 @@ func b85Decode(ctx *context.Context) error {
 		return ctx.Reply("❌ Invalid Base85 input.")
 	}
 	return ctx.Reply("🔓 Decoded:\n" + string(decoded[:n]))
+}
+
+func (*Module) LoadBase(dispatcher *ext.Dispatcher) {
+	log := LOGGER.Create("base")
+	defer log.Println("Loaded Base Encode/Decode module")
+
+	dispatcher.AddHandler(
+		handlers.NewCommand("b64", authorizedOnly(b64Encode), log.Create("b64")).
+			AddDescription("Encode text to Base64."),
+	)
+	dispatcher.AddHandler(
+		handlers.NewCommand("b64d", authorizedOnly(b64Decode), log.Create("b64d")).
+			AddDescription("Decode Base64 to text."),
+	)
+	dispatcher.AddHandler(
+		handlers.NewCommand("b85", authorizedOnly(b85Encode), log.Create("b85")).
+			AddDescription("Encode text to Base85."),
+	)
+	dispatcher.AddHandler(
+		handlers.NewCommand("b85d", authorizedOnly(b85Decode), log.Create("b85d")).
+			AddDescription("Decode Base85 to text."),
+	)
 }
