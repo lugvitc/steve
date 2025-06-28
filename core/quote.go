@@ -115,14 +115,12 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 			FileLength:    &uploaded.FileLength,
 		},
 	}
-
-	// This final send is for the sticker itself, not a simple text reply, so it remains unchanged.
 	_, err = client.SendMessage(ctx.Message.Info.Chat, stickerMsg)
 	if err != nil {
 		log.Printf("Failed to send sticker: %v", err)
 	}
 
-	return nil // Success
+	return nil
 }
 
 
@@ -136,8 +134,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 		bubbleRadius   = 12.0
 	)
 
-	// To prevent a panic on systems where fonts are not found, we check the error
-	// and return a more user-friendly error message.
+	// font location change
 	if err := gg.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20); err != nil {
 		return nil, fmt.Errorf("could not load bold font. Make sure a valid font file exists")
 	}
@@ -146,7 +143,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	}
 
 	tempDC := gg.NewContext(0, 0)
-	// Using a specific font name to avoid ambiguity if multiple are loaded.
+	// this too
 	regularFont, err := gg.ParseFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22)
 	if err != nil {
 		return nil, err
@@ -155,7 +152,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 
 	lineSpacing := 1.4
 	wrappedLines := tempDC.WordWrap(text, maxWidth-(padding*2))
-
+	// this too
 	boldFont, err := gg.ParseFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
 	if err != nil {
 		return nil, err
