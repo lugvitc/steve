@@ -81,12 +81,12 @@ func (*Module) LoadDev(dispatcher *ext.Dispatcher) {
 	languages = pClient.GetLanguages()
 	initLanguagesString()
 	dispatcher.AddHandler(
-		handlers.NewCommand("eval", authorizedOnly(eval), ppLogger.Create("eval-cmd").
+		handlers.NewCommand("eval", eval, ppLogger.Create("eval-cmd").
 			ChangeLevel(waLogger.LevelInfo),
 		).AddDescription(`Execute codes using piston engine`),
 	)
 	dispatcher.AddHandler(
-		handlers.NewCommand("langs", authorizedOnly(languagesC), ppLogger.Create("langs-cmd").
+		handlers.NewCommand("langs", languagesC, ppLogger.Create("langs-cmd").
 			ChangeLevel(waLogger.LevelInfo),
 		).AddDescription(`Get list of supported languages`),
 	)
