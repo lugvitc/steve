@@ -13,48 +13,58 @@ import (
 	"go.mau.fi/whatsmeow"
 )
 
-func b64Encode(_ *whatsmeow.Client, ctx *context.Context) error {
+func b64Encode(client *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
-		return ctx.Reply("Usage: .b64 <text>")
+		_, err := reply(client, ctx.Message, "Usage: .b64 <text>")
+		return err
 	}
 	encoded := base64.StdEncoding.EncodeToString([]byte(text))
-	return ctx.Reply("🔒 Base64:\n" + encoded)
+	_, err := reply(client, ctx.Message, "🔒 Base64:\n"+encoded)
+	return err
 }
 
-func b64Decode(_ *whatsmeow.Client, ctx *context.Context) error {
+func b64Decode(client *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
-		return ctx.Reply("Usage: .b64d <base64>")
+		_, err := reply(client, ctx.Message, "Usage: .b64d <base64>")
+		return err
 	}
 	decoded, err := base64.StdEncoding.DecodeString(text)
 	if err != nil {
-		return ctx.Reply("❌ Invalid Base64 input.")
+		_, err := reply(client, ctx.Message, "❌ Invalid Base64 input.")
+		return err
 	}
-	return ctx.Reply("🔓 Decoded:\n" + string(decoded))
+	_, err = reply(client, ctx.Message, "🔓 Decoded:\n"+string(decoded))
+	return err
 }
 
-func b85Encode(_ *whatsmeow.Client, ctx *context.Context) error {
+func b85Encode(client *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
-		return ctx.Reply("Usage: .b85 <text>")
+		_, err := reply(client, ctx.Message, "Usage: .b85 <text>")
+		return err
 	}
 	buf := make([]byte, ascii85.MaxEncodedLen(len(text)))
 	n := ascii85.Encode(buf, []byte(text))
-	return ctx.Reply("🔒 Base85:\n" + string(buf[:n]))
+	_, err := reply(client, ctx.Message, "🔒 Base85:\n"+string(buf[:n]))
+	return err
 }
 
-func b85Decode(_ *whatsmeow.Client, ctx *context.Context) error {
+func b85Decode(client *whatsmeow.Client, ctx *context.Context) error {
 	text := strings.TrimSpace(ctx.Args)
 	if text == "" {
-		return ctx.Reply("Usage: .b85d <base85>")
+		_, err := reply(client, ctx.Message, "Usage: .b85d <base85>")
+		return err
 	}
 	decoded := make([]byte, len(text))
 	n, _, err := ascii85.Decode(decoded, []byte(text), true)
 	if err != nil {
-		return ctx.Reply("❌ Invalid Base85 input.")
+		_, err := reply(client, ctx.Message, "❌ Invalid Base85 input.")
+		return err
 	}
-	return ctx.Reply("🔓 Decoded:\n" + string(decoded[:n]))
+	_, err = reply(client, ctx.Message, "🔓 Decoded:\n"+string(decoded[:n]))
+	return err
 }
 
 func (*Module) LoadBase(dispatcher *ext.Dispatcher) {
