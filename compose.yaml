@@ -4,3 +4,4 @@ services:
     command: ["/app/ubot"]
     volumes:
       - ./data:/data
+      - ./assets/dejavu:/usr/share/fonts/truetype/dejavu
