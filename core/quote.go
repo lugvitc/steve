@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chai2010/webp"
 	"github.com/fogleman/gg"
 	"github.com/lugvitc/steve/core/sql"
 	"github.com/lugvitc/steve/ext"
@@ -153,13 +154,36 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	dc.SetColor(darkTimeColor)
 	dc.DrawString(timeStr, timeX, timeY)
 
+	dim := 512.0
+	var yOffset float64
+	var xOffset float64 = 0
+	if totalHeight > dim-10 {
+		del := 10.0
+		dim = totalHeight + del
+		yOffset = del / 2
+		xOffset = (dim - finalWidth) / 2
+	} else {
+		yOffset = (dim - totalHeight) / 2
+	}
+	dc1 := gg.NewContext(int(dim), int(dim))
+	dc1.DrawImage(dc.Image(), int(xOffset), int(yOffset))
+
 	var buf bytes.Buffer
-	err = dc.EncodePNG(&buf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode image to PNG: %w", err)
+	if err := webp.Encode(&buf, dc1.Image(), &webp.Options{Lossless: true}); err != nil {
+		return nil, fmt.Errorf("failed to encode to webp: %w", err)
 	}
 
 	return buf.Bytes(), nil
+
+	// png:
+
+	// var buf bytes.Buffer
+	// err = dc.EncodePNG(&buf)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to encode image to PNG: %w", err)
+	// }
+
+	// return buf.Bytes(), nil
 }
 
 func createDefaultPFP() image.Image {
@@ -262,8 +286,25 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 		_, err := reply(client, ctx.Message, "Failed to upload the sticker.")
 		return err
 	}
-	imageMsg := &waE2E.ImageMessage{
-		Mimetype: proto.String("image/png"), // replace this with the actual mime type
+	// imageMsg := &waE2E.ImageMessage{
+	// 	Mimetype: proto.String("image/png"), // replace this with the actual mime type
+	// 	// you can also optionally add other fields like ContextInfo and JpegThumbnail here
+
+	// 	URL:           &resp.URL,
+	// 	DirectPath:    &resp.DirectPath,
+	// 	MediaKey:      resp.MediaKey,
+	// 	FileEncSHA256: resp.FileEncSHA256,
+	// 	FileSHA256:    resp.FileSHA256,
+	// 	FileLength:    &resp.FileLength,
+	// 	ContextInfo: &waE2E.ContextInfo{
+	// 		StanzaID:      &ctx.Message.Info.ID,
+	// 		Participant:   proto.String(ctx.Message.Info.Sender.String()),
+	// 		QuotedMessage: ctx.Message.Message.Message,
+	// 	},
+	// }
+
+	stickerMsg := &waE2E.StickerMessage{
+		Mimetype: proto.String("image/webp"), // replace this with the actual mime type
 		// you can also optionally add other fields like ContextInfo and JpegThumbnail here
 
 		URL:           &resp.URL,
@@ -280,7 +321,7 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	}
 
 	_, err = client.SendMessage(ctx, ctx.Message.Info.Chat, &waE2E.Message{
-		ImageMessage: imageMsg,
+		StickerMessage: stickerMsg,
 	})
 	if err != nil {
 		log.Printf("Failed to send sticker: %v", err)
