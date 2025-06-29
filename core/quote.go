@@ -156,15 +156,14 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 
 	dim := 512.0
 	var yOffset float64
-	var xOffset float64 = 0
 	if totalHeight > dim-10 {
 		del := 10.0
 		dim = totalHeight + del
 		yOffset = del / 2
-		xOffset = (dim - finalWidth) / 2
 	} else {
 		yOffset = (dim - totalHeight) / 2
 	}
+	xOffset := (dim - finalWidth) / 2
 	dc1 := gg.NewContext(int(dim), int(dim))
 	dc1.DrawImage(dc.Image(), int(xOffset), int(yOffset))
 
