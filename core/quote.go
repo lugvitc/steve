@@ -155,17 +155,22 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	dc.DrawString(timeStr, timeX, timeY)
 
 	dim := 512.0
-	var yOffset float64
-	if totalHeight > dim-10 {
-		del := 10.0
-		dim = totalHeight + del
-		yOffset = del / 2
-	} else {
-		yOffset = (dim - totalHeight) / 2
+	scaleFactor := float64(dim) / float64(finalWidth)
+	scaledHeight := float64(totalHeight) * scaleFactor
+	offsetY := (float64(dim) - scaledHeight) / 2
+	offsetX := 0.0
+	if scaledHeight > dim {
+		dim = scaledHeight
+		offsetY = 0
+		offsetX = (dim - finalWidth) / 2
 	}
-	xOffset := (dim - finalWidth) / 2
+
 	dc1 := gg.NewContext(int(dim), int(dim))
-	dc1.DrawImage(dc.Image(), int(xOffset), int(yOffset))
+	dc1.Push()
+	dc1.Translate(offsetX, offsetY)
+	dc1.Scale(scaleFactor, scaleFactor)
+	dc1.DrawImage(dc.Image(), 0, 0)
+	dc1.Pop()
 
 	var buf bytes.Buffer
 	if err := webp.Encode(&buf, dc1.Image(), &webp.Options{Lossless: true}); err != nil {
