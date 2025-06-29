@@ -3,6 +3,8 @@ package core
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"image"
@@ -33,6 +35,19 @@ var (
 	darkTextColor   = color.RGBA{R: 233, G: 237, B: 239, A: 255} // #E9EDEF
 	darkTimeColor   = color.RGBA{R: 134, G: 150, B: 160, A: 255} // #8696A0
 )
+
+var profileColors = []string{
+	"#D38F29", "#4CAF50", "#4A90E2",
+	"#DF3D3E", "#FF5722", "#03A9F4",
+	"#9C27B0", "#009688",
+}
+
+func getProfileColor(name string) string {
+	hash := sha1.Sum([]byte(name))
+	hashInt := binary.BigEndian.Uint32(hash[:4])
+	color := profileColors[hashInt%uint32(len(profileColors))]
+	return color
+}
 
 func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) ([]byte, error) {
 	const (
@@ -124,7 +139,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	dc.Fill()
 
 	// pfp
-	pfp = resizeImage(pfp, pfpSize, pfpSize)
+	pfp = resizeImage(pfp, name, pfpSize, pfpSize)
 	pfpX := padding - pfpRightMargin + pfpSize/2
 	pfpY := padding + 30.0
 	dc.DrawCircle(pfpX, pfpY, pfpSize/2)
@@ -136,7 +151,7 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	contentY := padding + 30.0
 
 	dc.SetFontFace(boldFont)
-	dc.SetColor(darkNameColor)
+	dc.SetHexColor(getProfileColor(name))
 	dc.DrawString(name, contentX, contentY)
 	contentY += 13.0
 
@@ -190,21 +205,35 @@ func createQuoteImage(pfp image.Image, name, text string, timestamp time.Time) (
 	// return buf.Bytes(), nil
 }
 
-func createDefaultPFP() image.Image {
-	dc := gg.NewContext(60, 60)
-	dc.SetHexColor("#344047")
-	dc.DrawCircle(30, 30, 30)
+func createDefaultPFP(name string) image.Image {
+	const size = 60
+	const fontSize = 28
+
+	letter := strings.ToUpper(string(name[0]))
+
+	dc := gg.NewContext(size, size)
+	dc.SetHexColor(getProfileColor(name))
+	dc.DrawCircle(float64(size)/2, float64(size)/2, float64(size)/2)
 	dc.Fill()
+
+	// Load font
+	if err := dc.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", fontSize); err != nil {
+		panic(err)
+	}
+
+	// Draw first letter
+	dc.SetRGB(1, 1, 1) // white text
+	dc.DrawStringAnchored(letter, float64(size)/2, float64(size)/2, 0.5, 0.5)
 	return dc.Image()
 }
 
-func resizeImage(img image.Image, width, height float64) image.Image {
+func resizeImage(img image.Image, name string, width, height float64) image.Image {
 	origBounds := img.Bounds()
 	origWidth := float64(origBounds.Dx())
 	origHeight := float64(origBounds.Dy())
 
 	if origWidth == 0 || origHeight == 0 {
-		return createDefaultPFP()
+		return createDefaultPFP(name)
 	}
 
 	resizedCtx := gg.NewContext(int(width), int(height))
@@ -269,7 +298,7 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	pfpImage, err := getProfilePicture(client, senderJID)
 	if err != nil {
 		// Don't return an error, just use the default PFP
-		pfpImage = createDefaultPFP()
+		pfpImage = createDefaultPFP(senderName)
 	}
 	if savedMessage.Timestamp == 0 {
 		savedMessage.Timestamp = time.Now().Unix()
