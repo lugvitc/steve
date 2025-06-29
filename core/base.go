@@ -3,18 +3,16 @@ package core
 import (
 	"encoding/ascii85"
 	"encoding/base64"
-	"strings"
 
 	"github.com/lugvitc/steve/ext"
 	"github.com/lugvitc/steve/ext/context"
 	"github.com/lugvitc/steve/ext/handlers"
-	waLogger "github.com/lugvitc/steve/logger"
 
 	"go.mau.fi/whatsmeow"
 )
 
 func b64Encode(client *whatsmeow.Client, ctx *context.Context) error {
-	text := strings.TrimSpace(ctx.Args)
+	text := extractText(ctx.Message)
 	if text == "" {
 		_, err := reply(client, ctx.Message, "Usage: .b64 <text>")
 		return err
@@ -25,7 +23,7 @@ func b64Encode(client *whatsmeow.Client, ctx *context.Context) error {
 }
 
 func b64Decode(client *whatsmeow.Client, ctx *context.Context) error {
-	text := strings.TrimSpace(ctx.Args)
+	text := extractText(ctx.Message)
 	if text == "" {
 		_, err := reply(client, ctx.Message, "Usage: .b64d <base64>")
 		return err
@@ -40,7 +38,7 @@ func b64Decode(client *whatsmeow.Client, ctx *context.Context) error {
 }
 
 func b85Encode(client *whatsmeow.Client, ctx *context.Context) error {
-	text := strings.TrimSpace(ctx.Args)
+	text := extractText(ctx.Message)
 	if text == "" {
 		_, err := reply(client, ctx.Message, "Usage: .b85 <text>")
 		return err
@@ -52,7 +50,7 @@ func b85Encode(client *whatsmeow.Client, ctx *context.Context) error {
 }
 
 func b85Decode(client *whatsmeow.Client, ctx *context.Context) error {
-	text := strings.TrimSpace(ctx.Args)
+	text := extractText(ctx.Message)
 	if text == "" {
 		_, err := reply(client, ctx.Message, "Usage: .b85d <base85>")
 		return err

@@ -2,6 +2,7 @@ package core
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/lugvitc/steve/config"
 	"github.com/lugvitc/steve/ext"
@@ -15,6 +16,30 @@ import (
 var LOGGER = logger.NewLogger(logger.LevelInfo)
 
 type Module struct{}
+
+func extractText(msg *context.Message) string {
+	args := msg.Args()
+	if len(args) <= 1 {
+		return ""
+	}
+	m := msg.Message
+	var value string
+	if m.Message.ExtendedTextMessage != nil && m.Message.ExtendedTextMessage.ContextInfo != nil {
+		qmsg := m.Message.ExtendedTextMessage.ContextInfo.QuotedMessage
+		switch {
+		case qmsg.Conversation != nil:
+			value = qmsg.GetConversation()
+		case qmsg.ExtendedTextMessage != nil:
+			value = qmsg.ExtendedTextMessage.GetText()
+		}
+	} else {
+		if len(args) == 1 {
+			return ""
+		}
+		value = strings.Join(args[1:], " ")
+	}
+	return value
+}
 
 func reply(client *whatsmeow.Client, msg *context.Message, text string) (whatsmeow.SendResponse, error) {
 	if msg.Info.IsFromMe {
