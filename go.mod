@@ -5,6 +5,8 @@ go 1.23.0
 toolchain go1.24.3
 
 require (
+	github.com/chai2010/webp v1.4.0
+	github.com/fogleman/gg v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/mdp/qrterminal/v3 v3.2.0
 	github.com/milindmadhukar/go-piston v0.0.0-20240618154618-bbb46040f91d
@@ -16,6 +18,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -28,6 +31,7 @@ require (
 	go.mau.fi/util v0.8.8 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476 // indirect
+	golang.org/x/image v0.0.0-20211028202545-6944b10bf410 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect

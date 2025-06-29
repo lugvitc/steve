@@ -30,7 +30,7 @@ func LoadDB(LOGGER *waLogger.Logger) *sqlOrig.DB {
 	LOGGER.Println("Database connected")
 
 	// Create tables if they don't exist
-	_ = SESSION.AutoMigrate(&Note{}, &Filter{}, &ChatSettings{})
+	_ = SESSION.AutoMigrate(&Note{}, &Filter{}, &ChatSettings{}, &Message{})
 	LOGGER.Println("Auto-migrated database schema")
 	return dB
 }
