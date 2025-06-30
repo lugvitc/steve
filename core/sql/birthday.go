@@ -1,27 +1,29 @@
 package sql
 
-import (
-	"log"
-)
 type Birthday struct {
-	JID      string `gorm:"primary_key"`
-	Birthday string
-}
-func AddBirthday(jid, birthday string) {
-	b := &Birthday{JID: jid}
+	UserID  string `gorm:"primaryKey"` 
+	Date    string
+	ChatJID string
+func SaveBirthday(userID, date, chatJID string) {
+	birthday := &Birthday{UserID: userID}
 	tx := SESSION.Begin()
-	tx.FirstOrCreate(b)
-	b.Birthday = birthday
-	if err := tx.Save(b).Error; err != nil {
-		log.Printf("Failed to save birthday: %v", err)
-		tx.Rollback() 
-		return
-	}
+	tx.FirstOrCreate(birthday)
+	birthday.Date = date
+	birthday.ChatJID = chatJID
+	tx.Save(birthday)
 	tx.Commit()
 }
-func GetBirthdaysForDate(date string) []Birthday {
+func DeleteBirthday(userID string) bool {
+	birthday := &Birthday{UserID: userID}
+	return SESSION.Delete(birthday).RowsAffected != 0
+}
+func GetTodaysBirthdays(todayDate string) []Birthday {
 	var birthdays []Birthday
-	SESSION.Where("birthday = ?", date).Find(&birthdays)
+	SESSION.Where("date = ?", todayDate).Find(&birthdays)
 	return birthdays
 }
-// assuming gorm's AutoMigrate should handle table creation
+func GetAllBirthdays() []Birthday {
+	var birthdays []Birthday
+	SESSION.Find(&birthdays)
+	return birthdays
+}
