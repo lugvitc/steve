@@ -45,7 +45,7 @@ func main() {
 	core.LOGGER.Println("Created new disptacher")
 	dispatcher.InitialiseProcessing(ctx, client)
 	db := sql.LoadDB(core.LOGGER)
-	core.Load(dispatcher)
+	core.Load(dispatcher, client)
 
 	if client.Store.ID == nil {
 		// No ID stored, new login
