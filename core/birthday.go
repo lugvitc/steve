@@ -1,130 +1,141 @@
 package core
 
 import (
+	"context"
 	"fmt"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/lugvitc/steve/core/sql"
 	"github.com/lugvitc/steve/ext"
 	"github.com/lugvitc/steve/ext/context"
 	"github.com/lugvitc/steve/ext/handlers"
-	waLogger "github.com/lugvitc/steve/logger"
-
+	"github.com/lugvitc/steve/logger"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
+	"google.golang.org/protobuf/proto"
 )
-
-func addNote(client *whatsmeow.Client, ctx *context.Context) error {
+func saveBirthday(client *whatsmeow.Client, ctx *context.Context) error {
 	args := ctx.Message.Args()
-	if len(args) <= 1 {
+	if len(args) < 2 {
+		_, _ = reply(client, ctx.Message, "Please provide a date. Usage: `.savebirthday DD/MM @user`")
 		return ext.EndGroups
 	}
-	msg := ctx.Message.Message
-	key := args[1]
-	var value string
-	if msg.Message.ExtendedTextMessage != nil && msg.Message.ExtendedTextMessage.ContextInfo != nil {
-		qmsg := msg.Message.ExtendedTextMessage.ContextInfo.QuotedMessage
-		switch {
-		case qmsg.Conversation != nil:
-			value = qmsg.GetConversation()
-		case qmsg.ExtendedTextMessage != nil:
-			value = qmsg.ExtendedTextMessage.GetText()
+
+	dateStr := args[1]
+	match, _ := regexp.MatchString(`^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])$`, dateStr)
+	if !match {
+		_, _ = reply(client, ctx.Message, "Invalid date format. Please use `DD/MM`.")
+		return ext.EndGroups
+	}
+
+	var mentionedJIDs []string
+	if ctx.Message.Message.Message.ExtendedTextMessage != nil {
+		mentionedJIDs = ctx.Message.Message.Message.ExtendedTextMessage.ContextInfo.GetMentionedJID()
+	}
+
+	if len(mentionedJIDs) == 0 {
+		_, _ = reply(client, ctx.Message, "Please mention a user to save their birthday.")
+		return ext.EndGroups
+	}
+
+	for _, jidStr := range mentionedJIDs {
+		sql.SaveBirthday(jidStr, dateStr, ctx.Message.Info.Chat.String())
+	}
+
+	_, _ = reply(client, ctx.Message, fmt.Sprintf("Birthday saved for %d user(s) on `%s`.", len(mentionedJIDs), dateStr))
+	return ext.EndGroups
+}
+func deleteBirthday(client *whatsmeow.Client, ctx *context.Context) error {
+	var mentionedJIDs []string
+	if ctx.Message.Message.Message.ExtendedTextMessage != nil {
+		mentionedJIDs = ctx.Message.Message.Message.ExtendedTextMessage.ContextInfo.GetMentionedJID()
+	}
+
+	if len(mentionedJIDs) == 0 {
+		_, _ = reply(client, ctx.Message, "Please mention a user to delete their birthday.")
+		return ext.EndGroups
+	}
+
+	deletedCount := 0
+	for _, jidStr := range mentionedJIDs {
+		if sql.DeleteBirthday(jidStr) {
+			deletedCount++
 		}
-	} else {
-		if len(args) == 2 {
-			return ext.EndGroups
+	}
+
+	_, _ = reply(client, ctx.Message, fmt.Sprintf("Successfully deleted %d birthday(s).", deletedCount))
+	return ext.EndGroups
+}
+func listBirthdays(client *whatsmeow.Client, ctx *context.Context) error {
+	allBirthdays := sql.GetAllBirthdays()
+	if len(allBirthdays) == 0 {
+		_, _ = reply(client, ctx.Message, "No birthdays saved yet.")
+		return ext.EndGroups
+	}
+
+	var response strings.Builder
+	response.WriteString("*Saved Birthdays*:\n")
+	for _, b := range allBirthdays {
+		user := strings.Split(b.UserID, "@")[0]
+		response.WriteString(fmt.Sprintf("\n- `User %s`: %s", user, b.Date))
+	}
+
+	_, _ = reply(client, ctx.Message, response.String())
+	return ext.EndGroups
+}
+func checkAndWishBirthdays(client *whatsmeow.Client, ppLogger *logger.Logger) {
+	time.Sleep(10 * time.Second)
+
+	for {
+		ppLogger.Println("Running daily birthday check...")
+		today := time.Now().Format("02/01")
+		birthdays := sql.GetTodaysBirthdays(today)
+
+		if len(birthdays) > 0 {
+			for _, b := range birthdays {
+				ppLogger.Println(fmt.Sprintf("Wishing birthday to %s", b.UserID))
+				chatJID, _ := types.ParseJID(b.ChatJID)
+				userJID, _ := types.ParseJID(b.UserID)
+
+				wish := fmt.Sprintf("Happy Birthday @%s!", userJID.User)
+				_, err := client.SendMessage(context.Background(), chatJID, &waE2E.Message{
+					ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+						Text: proto.String(wish),
+						ContextInfo: &waE2E.ContextInfo{
+							MentionedJID: []string{userJID.String()},
+						},
+					},
+				})
+				if err != nil {
+					ppLogger.ChangeLevel(logger.LevelError).Println(fmt.Sprintf("Failed to send birthday wish to %s: %v", userJID, err))
+				}
+				time.Sleep(2 * time.Second) 
+			}
+		} else {
+			ppLogger.Println("No birthdays found for today.")
 		}
-		value = strings.Join(args[2:], " ")
+		time.Sleep(24 * time.Hour)
 	}
-	go sql.AddNote(strings.ToLower(key), value)
-	_, _ = reply(client, ctx.Message, fmt.Sprintf("Added Note ```%s```.", key))
-	return ext.EndGroups
 }
+func (*Module) LoadBirthday(dispatcher *ext.Dispatcher, client *whatsmeow.Client) {
+	ppLogger := LOGGER.Create("birthday")
+	defer ppLogger.Println("Loaded Birthday module")
 
-func deleteNote(client *whatsmeow.Client, ctx *context.Context) error {
-	args := ctx.Message.Args()
-	if len(args) == 1 {
-		return ext.EndGroups
-	}
-	key := args[1]
-	if sql.DeleteNote(strings.ToLower(key)) {
-		_, _ = reply(client, ctx.Message, fmt.Sprintf("Successfully delete note '```%s```'.", key))
-	} else {
-		_, _ = reply(client, ctx.Message, "Failed to delete that note!")
-	}
-	return ext.EndGroups
-}
-
-func getNote(client *whatsmeow.Client, ctx *context.Context) error {
-	args := ctx.Message.Args()
-	if len(args) == 1 {
-		return ext.EndGroups
-	}
-	key := args[1]
-	value := sql.GetNote(strings.ToLower(key)).Value
-	if value == "" {
-		value = "```Note not found```"
-	}
-	_, _ = reply(client, ctx.Message, value)
-	return ext.EndGroups
-}
-
-func getNoteHash(client *whatsmeow.Client, ctx *context.Context) error {
-	args := ctx.Message.Args()
-	if len(args) == 0 {
-		return nil
-	}
-	text := strings.ToLower(args[0])
-	if !strings.HasPrefix(text, "#") {
-		return nil
-	}
-	text = text[1:]
-	value := sql.GetNote(text).Value
-	if value == "" {
-		return nil
-	}
-	_, _ = reply(client, ctx.Message, value)
-	return nil
-}
-
-func listNotes(client *whatsmeow.Client, ctx *context.Context) error {
-	text := "*List of notes*:"
-	for _, note := range sql.GetNotes() {
-		text += fmt.Sprintf("\n- ```%s```", note.Name)
-	}
-	if text == "*List of notes*:" {
-		text = "No notes are present."
-	}
-	_, _ = reply(client, ctx.Message, text)
-	return ext.EndGroups
-}
-
-func (*Module) LoadNote(dispatcher *ext.Dispatcher) {
-	ppLogger := LOGGER.Create("note")
-	defer ppLogger.Println("Loaded Note module")
 	dispatcher.AddHandler(
-		handlers.NewCommand("add", authorizedOnly(addNote), ppLogger.Create("add-cmd").
-			ChangeLevel(waLogger.LevelInfo),
-		).AddDescription("Add a note."),
+		handlers.NewCommand("savebirthday", authorizedOnly(saveBirthday), ppLogger.Create("save-cmd")).
+			AddDescription("Saves a user's birthday. Usage: .savebirthday DD/MM @user"),
 	)
 	dispatcher.AddHandler(
-		handlers.NewCommand("clear", authorizedOnly(deleteNote), ppLogger.Create("clear-cmd").
-			ChangeLevel(waLogger.LevelInfo),
-		).AddDescription("Clear a note."),
+		handlers.NewCommand("delbirthday", authorizedOnly(deleteBirthday), ppLogger.Create("del-cmd")).
+			AddDescription("Deletes a user's birthday. Usage: .delbirthday @user"),
 	)
 	dispatcher.AddHandler(
-		handlers.NewCommand("get", getNote, ppLogger.Create("get-cmd").
-			ChangeLevel(waLogger.LevelInfo),
-		).AddDescription("Get a note from key."),
+		handlers.NewCommand("birthdays", listBirthdays, ppLogger.Create("list-cmd")).
+			AddDescription("Lists all saved birthdays."),
 	)
-	dispatcher.AddHandler(
-		handlers.NewCommand("notes", listNotes, ppLogger.Create("notes").
-			ChangeLevel(waLogger.LevelInfo),
-		).AddDescription("Display keys of all saved notes."),
-	)
-	dispatcher.AddHandlerToGroup(
-		handlers.NewMessage(getNoteHash, ppLogger.Create("get-hash").
-			ChangeLevel(waLogger.LevelInfo),
-		).AddDescription("Get a note using #key format."),
-		1,
-	)
+
+	go checkAndWishBirthdays(client, ppLogger)
 }
