@@ -78,18 +78,15 @@ func authorizedOnlyMessages(callback handlers.Response) handlers.Response {
 		return callback(client, ctx)
 	}
 }
-
-func Load(dispatcher *ext.Dispatcher, client *whatsmeow.Client) {
+func Load(dispatcher *ext.Dispatcher, client *whatsmeow.Client) { 
 	defer LOGGER.Println("Loaded all modules")
 	Type := reflect.TypeOf(&Module{})
 	Value := reflect.ValueOf(&Module{})
-
 	for i := 0; i < Type.NumMethod(); i++ {
 		method := Type.Method(i)
-		numArgs := method.Type.NumIn()
-		if numArgs == 3 && method.Type.In(2) == reflect.TypeOf(client) {
+		if method.Type.NumIn() == 3 && method.Type.In(2).String() == "*whatsmeow.Client" {
 			method.Func.Call([]reflect.Value{Value, reflect.ValueOf(dispatcher), reflect.ValueOf(client)})
-		} else if numArgs == 2 {
+		} else if method.Type.NumIn() == 2 && method.Type.In(1).String() == "*ext.Dispatcher" {
 			method.Func.Call([]reflect.Value{Value, reflect.ValueOf(dispatcher)})
 		}
 	}
