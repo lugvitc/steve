@@ -9,8 +9,10 @@ import (
 	"github.com/lugvitc/steve/ext/context"
 	"github.com/lugvitc/steve/ext/handlers"
 	"github.com/lugvitc/steve/logger"
+	"google.golang.org/protobuf/proto"
 
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 )
 
 var LOGGER = logger.NewLogger(logger.LevelInfo)
@@ -45,7 +47,18 @@ func reply(client *whatsmeow.Client, msg *context.Message, text string) (whatsme
 	if msg.Info.IsFromMe {
 		return msg.Edit(client, text)
 	}
-	return msg.Reply(client, text)
+	var qContext *waE2E.ContextInfo
+	if msg.Message.Message.ExtendedTextMessage != nil && msg.Message.Message.ExtendedTextMessage.ContextInfo != nil {
+		qContext = msg.Message.Message.ExtendedTextMessage.ContextInfo
+	} else {
+		qContext = &waE2E.ContextInfo{
+			StanzaID:      &msg.Info.ID,
+			Participant:   proto.String(msg.Info.Sender.String()),
+			QuotedMessage: msg.Message.Message,
+			MentionedJID:  []string{msg.Info.Sender.String()},
+		}
+	}
+	return msg.ReplyCustom(client, text, qContext)
 }
 
 func authorizedOnly(callback handlers.Response) handlers.Response {
