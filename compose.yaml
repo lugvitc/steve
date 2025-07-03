@@ -5,3 +5,5 @@ services:
     volumes:
       - ./data:/data
       - ./assets/dejavu:/usr/share/fonts/truetype/dejavu
+    environment:
+      - TZ=Asia/Kolkata
