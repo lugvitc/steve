@@ -14,7 +14,7 @@ import (
 
 func info(client *whatsmeow.Client, ctx *context.Context) error {
 	jid := ctx.Message.Info.Chat
-	info, err := client.GetGroupInfo(jid)
+	info, err := client.GetGroupInfo(ctx, jid)
 	if err != nil {
 		_, _ = ctx.Message.Edit(client, err.Error())
 		return ext.EndGroups
@@ -36,7 +36,7 @@ func linkinfo(client *whatsmeow.Client, ctx *context.Context) error {
 	if len(args) <= 1 {
 		return ext.EndGroups
 	}
-	info, err := client.GetGroupInfoFromLink(args[1])
+	info, err := client.GetGroupInfoFromLink(ctx, args[1])
 	if err != nil {
 		_, _ = reply(client, ctx.Message, err.Error())
 		return ext.EndGroups
@@ -66,7 +66,7 @@ func addUser(client *whatsmeow.Client, ctx *context.Context) error {
 		_, _ = ctx.Message.Edit(client, "failed to parse JID: "+err.Error())
 		return ext.EndGroups
 	}
-	_, err = client.UpdateGroupParticipants(jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangeAdd)
+	_, err = client.UpdateGroupParticipants(ctx, jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangeAdd)
 	if err != nil {
 		_, _ = ctx.Message.Edit(client, "failed to add: "+err.Error())
 		return ext.EndGroups
@@ -93,7 +93,7 @@ func removeUser(client *whatsmeow.Client, ctx *context.Context) error {
 		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
 		return ext.EndGroups
 	}
-	_, err = client.UpdateGroupParticipants(jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangeRemove)
+	_, err = client.UpdateGroupParticipants(ctx, jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangeRemove)
 	if err != nil {
 		_, _ = ctx.Message.Edit(client, "failed to remove: "+err.Error())
 		return ext.EndGroups
@@ -121,7 +121,7 @@ func promoteUser(client *whatsmeow.Client, ctx *context.Context) error {
 		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
 		return ext.EndGroups
 	}
-	_, err = client.UpdateGroupParticipants(jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangePromote)
+	_, err = client.UpdateGroupParticipants(ctx, jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangePromote)
 	if err != nil {
 		_, _ = ctx.Message.Edit(client, "failed to promote: "+err.Error())
 		return ext.EndGroups
@@ -149,7 +149,7 @@ func demoteUser(client *whatsmeow.Client, ctx *context.Context) error {
 		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to get user: %s", err.Error()))
 		return ext.EndGroups
 	}
-	_, err = client.UpdateGroupParticipants(jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangePromote)
+	_, err = client.UpdateGroupParticipants(ctx, jid, []types.JID{ctx.Message.Info.Chat}, whatsmeow.ParticipantChangePromote)
 	if err != nil {
 		_, _ = ctx.Message.Edit(client, "failed to demote: "+err.Error())
 		return ext.EndGroups

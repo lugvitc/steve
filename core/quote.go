@@ -283,7 +283,7 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	var senderName string
 	savedMessage := sql.GetMessage(contextInfo.GetStanzaID())
 	if savedMessage.PushName == "" {
-		senderInfo, err := client.GetUserInfo([]types.JID{senderJID})
+		senderInfo, err := client.GetUserInfo(ctx, []types.JID{senderJID})
 		if err == nil {
 			senderName = *senderInfo[senderJID].VerifiedName.Details.VerifiedName
 		}
@@ -295,7 +295,7 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 		senderName = strings.Split(senderJID.String(), "@")[0]
 	}
 
-	pfpImage, err := getProfilePicture(client, senderJID)
+	pfpImage, err := getProfilePicture(ctx, client, senderJID)
 	if err != nil {
 		// Don't return an error, just use the default PFP
 		pfpImage = createDefaultPFP(senderName)
@@ -362,8 +362,8 @@ func quote(client *whatsmeow.Client, ctx *sve_context.Context) error {
 	return nil
 }
 
-func getProfilePicture(client *whatsmeow.Client, jid types.JID) (image.Image, error) {
-	pfpInfo, err := client.GetProfilePictureInfo(jid, &whatsmeow.GetProfilePictureParams{Preview: true})
+func getProfilePicture(ctx context.Context, client *whatsmeow.Client, jid types.JID) (image.Image, error) {
+	pfpInfo, err := client.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{Preview: true})
 	if err != nil {
 		return nil, fmt.Errorf("could not get PFP info: %w", err)
 	}

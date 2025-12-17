@@ -16,7 +16,7 @@ func block(client *whatsmeow.Client, ctx *context.Context) error {
 		return ext.EndGroups
 	}
 	chat := ctx.Message.Info.Chat
-	if _, err := client.UpdateBlocklist(chat, "block"); err != nil {
+	if _, err := client.UpdateBlocklist(ctx, chat, "block"); err != nil {
 		_, _ = ctx.Message.Edit(client, fmt.Sprintf("failed to block: %s", err.Error()))
 	}
 	return ext.EndGroups
