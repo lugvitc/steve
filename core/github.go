@@ -42,8 +42,10 @@ func githubWebhookHandler(client *whatsmeow.Client, ppLogger *logger.Logger) htt
 
 		log.Printf("📩 Event=%s Delivery=%s\n", event, delivery)
 
-		msg := HandleGitHubEvent(event, body)
+		msg := HandleGitHubEvent(event, ppLogger, body)
 		if msg != "" {
+			ppLogger.Println("Sending GitHub event message")
+			ppLogger.Println(msg)
 			Send(client, ppLogger, msg)
 		}
 
@@ -51,27 +53,27 @@ func githubWebhookHandler(client *whatsmeow.Client, ppLogger *logger.Logger) htt
 	}
 }
 
-func HandleGitHubEvent(event string, body []byte) string {
+func HandleGitHubEvent(event string, ppLogger *logger.Logger, body []byte) string {
 	switch event {
 
 	case "push":
-		return handlePush(body)
+		return handlePush(body, ppLogger)
 
 	case "pull_request":
-		return handlePullRequest(body)
+		return handlePullRequest(body, ppLogger)
 
 	case "issues":
-		return handleIssue(body)
+		return handleIssue(body, ppLogger)
 
 	case "release":
-		return handleRelease(body)
+		return handleRelease(body, ppLogger)
 
 	default:
-		return handleGeneric(event, body)
+		return handleGeneric(event, body, ppLogger)
 	}
 }
 
-func handlePush(body []byte) string {
+func handlePush(body []byte, ppLogger *logger.Logger) string {
 	var p struct {
 		Ref        string `json:"ref"`
 		Repository struct {
@@ -90,6 +92,7 @@ func handlePush(body []byte) string {
 	}
 
 	if err := json.Unmarshal(body, &p); err != nil {
+		ppLogger.ChangeLevel(logger.LevelError).Println("Failed to unmarshal push event:", err.Error())
 		return ""
 	}
 
@@ -112,7 +115,7 @@ func handlePush(body []byte) string {
 	)
 }
 
-func handlePullRequest(body []byte) string {
+func handlePullRequest(body []byte, ppLogger *logger.Logger) string {
 	var p struct {
 		Action      string `json:"action"`
 		PullRequest struct {
@@ -133,7 +136,8 @@ func handlePullRequest(body []byte) string {
 		} `json:"repository"`
 	}
 
-	if json.Unmarshal(body, &p) != nil {
+	if err := json.Unmarshal(body, &p); err != nil {
+		ppLogger.ChangeLevel(logger.LevelError).Println("Failed to unmarshal pull request event:", err.Error())
 		return ""
 	}
 
@@ -154,7 +158,7 @@ func handlePullRequest(body []byte) string {
 	)
 }
 
-func handleIssue(body []byte) string {
+func handleIssue(body []byte, ppLogger *logger.Logger) string {
 	var p struct {
 		Action string `json:"action"`
 		Issue  struct {
@@ -169,7 +173,11 @@ func handleIssue(body []byte) string {
 			FullName string `json:"full_name"`
 		} `json:"repository"`
 	}
-	json.Unmarshal(body, &p)
+	err := json.Unmarshal(body, &p)
+	if err != nil {
+		ppLogger.ChangeLevel(logger.LevelError).Println("Failed to unmarshal issue event:", err.Error())
+		return ""
+	}
 
 	return fmt.Sprintf(
 		"🐞 *Issue %s*\n📦 %s\n👤 %s\n📝 %s\n🔗 %s\n\n%s",
@@ -182,7 +190,7 @@ func handleIssue(body []byte) string {
 	)
 }
 
-func handleRelease(body []byte) string {
+func handleRelease(body []byte, ppLogger *logger.Logger) string {
 	var p map[string]any
 	json.Unmarshal(body, &p)
 
@@ -197,7 +205,7 @@ func handleRelease(body []byte) string {
 	)
 }
 
-func handleGeneric(event string, body []byte) string {
+func handleGeneric(event string, body []byte, ppLogger *logger.Logger) string {
 	var p map[string]any
 	if json.Unmarshal(body, &p) != nil {
 		return ""
