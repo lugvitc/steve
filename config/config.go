@@ -3,10 +3,14 @@ package config
 import (
 	"encoding/json"
 	"os"
+
+	"go.mau.fi/whatsmeow/types"
 )
 
 type Config struct {
-	Sudo []string `json:"sudo"`
+	Sudo              []string `json:"sudo"`
+	GithubWebhookPort int      `json:"github_webhook_port"`
+	DeliveryJID       string   `json:"delivery_jid"`
 }
 
 var c Config
@@ -19,6 +23,12 @@ func LoadConfig() error {
 	defer f.Close()
 	if err := json.NewDecoder(f).Decode(&c); err != nil {
 		return err
+	}
+	if c.DeliveryJID != "" {
+		_, err := types.ParseJID(c.DeliveryJID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -34,4 +44,12 @@ func IsSudo(user string) bool {
 		}
 	}
 	return false
+}
+
+func GetGithubWebhookPort() int {
+	port := c.GithubWebhookPort
+	if port == 0 {
+		port = 8080
+	}
+	return port
 }

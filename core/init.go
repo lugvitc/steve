@@ -17,7 +17,9 @@ import (
 
 var LOGGER = logger.NewLogger(logger.LevelInfo)
 
-type Module struct{}
+type Module struct {
+	client *whatsmeow.Client
+}
 
 func extractText(msg *context.Message) string {
 	args := msg.Args()
@@ -79,10 +81,13 @@ func authorizedOnlyMessages(callback handlers.Response) handlers.Response {
 	}
 }
 
-func Load(dispatcher *ext.Dispatcher) {
+func Load(dispatcher *ext.Dispatcher, client *whatsmeow.Client) {
 	defer LOGGER.Println("Loaded all modules")
-	Type := reflect.TypeOf(&Module{})
-	Value := reflect.ValueOf(&Module{})
+	m := &Module{
+		client: client,
+	}
+	Type := reflect.TypeOf(m)
+	Value := reflect.ValueOf(m)
 	for i := 0; i < Type.NumMethod(); i++ {
 		Type.Method(i).Func.Call([]reflect.Value{Value, reflect.ValueOf(dispatcher)})
 	}
